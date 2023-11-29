@@ -1,2 +1,27 @@
-pip install openai --upgrade
-#zien jullie dit?
+import pandas as pd
+
+class BoardGameMechanicsAnalyzer:
+    def __init__(self, dataset_path, chatgpt_api_key):
+        self.chatgpt_api_key = chatgpt_api_key
+        try:
+            # Load the dataset into a Pandas DataFrame with the correct separator
+            self.data = pd.read_csv(dataset_path, sep=';')
+
+            # Remove rows with missing values in 'Name', 'Year Published', or 'Mechanics'
+            self.data.dropna(subset=['Name', 'Year Published', 'Mechanics'], inplace=True)
+
+            print("Dataset loaded and cleaned successfully.")
+            print("First few rows of the dataset:")
+            print(self.data.head())  # Display the first few rows
+
+        except Exception as e:
+            print(f"An error occurred while loading the dataset: {e}")
+
+# updaten naar Git
+dataset_file_path = 'C:\\Users\\Kai\\bgg_dataset.csv'
+
+# OpenAI secret key
+chatgpt_api_key = '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'
+
+# Creating an instance of the BoardGameMechanicsAnalyzer class
+analyzer = BoardGameMechanicsAnalyzer(dataset_file_path, chatgpt_api_key)
