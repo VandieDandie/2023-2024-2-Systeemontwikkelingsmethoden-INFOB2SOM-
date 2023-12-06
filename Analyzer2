@@ -11,7 +11,7 @@ class BoardGameMechanicsAnalyzer:
             # reads the CSV from the dataset path
             self.data = pd.read_csv(dataset_path, sep=';')  
             
-            # Clean the dataset where there is no information in the line of one of the columns
+            # Clean the dataset where there is no information in the line of one of the columns named
             self.data.dropna(subset=['Name'], inplace=True)
             self.data.dropna(subset=['Year Published'], inplace=True)
             self.data.dropna(subset=['Mechanics'], inplace=True)
@@ -20,9 +20,10 @@ class BoardGameMechanicsAnalyzer:
             print("Dataset loaded and empty rows removed.")
             
         # Exception in case any errors occur
-        except Exception as e:
+        except Exception:
             print("An error occurred while loading the dataset")
 
+    # If Name matches, get all the information on it
     def validate_mechanics(self, game_name):
         game_data = self.data[self.data['Name'] == game_name]
         
@@ -30,26 +31,24 @@ class BoardGameMechanicsAnalyzer:
         if game_data.empty:
             print(f"No data found for game: {game_name}")
             return
-
+        
+        # split mechanics into separate items in a list, to make it easier for ChatGPT to read through
         mechanics_list = game_data.iloc[0]['Mechanics'].split(', ')
-        messages =[
-            {
-                "role": "user",
-                "content": f"For the board game '{game_name}', the dataset lists these mechanics: {', '.join(mechanics_list)}. Are these mechanics accurately associated with the game?",
-            }
-        ],
-
+        
+        # run ChatGPT
         try:
             completion = openai.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
                     {
-                        "role": "user",
+                        # give role to ChatGPT
+                        "role" : "user",
+                        # the prompt for ChatGPT
                         "content": f"For the board game '{game_name}', the dataset lists these mechanics: {', '.join(mechanics_list)}. Are these mechanics accurately associated with the game?",
                     },
                 ],
             )
-           
+            
             print("ChatGPT's response:")
             print(completion.choices[0].message.content)
 
@@ -58,6 +57,6 @@ class BoardGameMechanicsAnalyzer:
 
 # Example usage
 dataset_file_path = 'C:\\Users\\Kai\\Documents\\SOM\\Assignment 1\\bgg_dataset.csv'
-chatgpt_api_key = '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'
+chatgpt_api_key = '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'
 analyzer = BoardGameMechanicsAnalyzer(dataset_file_path, chatgpt_api_key)
 analyzer.validate_mechanics("Gloomhaven")
