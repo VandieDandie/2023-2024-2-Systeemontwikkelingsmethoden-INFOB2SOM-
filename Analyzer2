@@ -57,6 +57,6 @@ class BoardGameMechanicsAnalyzer:
 
 # Example usage
 dataset_file_path = 'C:\\Users\\Kai\\Documents\\SOM\\Assignment 1\\bgg_dataset.csv'
-chatgpt_api_key = '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'
+chatgpt_api_key = 'chatgpt key here'
 analyzer = BoardGameMechanicsAnalyzer(dataset_file_path, chatgpt_api_key)
 analyzer.validate_mechanics("Gloomhaven")
