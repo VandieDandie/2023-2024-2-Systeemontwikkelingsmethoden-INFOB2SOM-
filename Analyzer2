@@ -20,8 +20,8 @@ class BoardGameMechanicsAnalyzer:
             print("Dataset loaded and empty rows removed.")
             
         # Exception in case any errors occur
-        except Exception:
-            print("An error occurred while loading the dataset")
+        except Exception as e:
+            print(f"An error occurred while loading the dataset: {e}")
 
     # If Name matches, get all the information on it
     def validate_mechanics(self, game_name):
@@ -37,7 +37,7 @@ class BoardGameMechanicsAnalyzer:
         
         # run ChatGPT
         try:
-            completion = openai.chat.completions.create(
+            completion = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
                 messages=[
                     {
@@ -49,14 +49,113 @@ class BoardGameMechanicsAnalyzer:
                 ],
             )
             
-            print("ChatGPT's response:")
-            print(completion.choices[0].message.content)
+            # Process ChatGPT result
+            self.process_chatgpt_result(game_name, mechanics_list, completion.choices[0].message)
 
         except Exception as e:
             print(f"An error occurred while querying ChatGPT: {e}")
 
-# Example usage
-dataset_file_path = 'C:\\Users\\Kai\\Documents\\SOM\\Assignment 1\\bgg_dataset.csv'
-chatgpt_api_key = 'chatgpt key here'
+    # Process the result produced by ChatGPT
+    def process_chatgpt_result(self, game_name, bgg_mechanics, chatgpt_response):
+        # Split ChatGPT response into separate items
+        chatgpt_mechanics = chatgpt_response['content'].split(', ')
+        
+        # Print ChatGPT response
+        print("ChatGPT's response:")
+        print(chatgpt_response['content'])
+
+        # Print mechanics lists
+        print(f"\nMechanics listed on BGG: {', '.join(bgg_mechanics)}")
+        print(f"Mechanics listed by ChatGPT: {', '.join(chatgpt_mechanics)}")
+
+        # Calculate accuracy ratio
+        if len(bgg_mechanics) > 0:
+            accuracy_ratio = len(chatgpt_mechanics) / len(bgg_mechanics)
+            print(f"Accuracy Ratio for {game_name}: {accuracy_ratio:.2%}")
+        else:
+            print("No mechanics listed on BGG for comparison.")
+
+    def assess_accuracy_for_games(self, game_list=None):
+        if game_list is None:
+            game_list = self.data[['Name', 'Year Published']].values.tolist()
+
+        total_games = len(game_list)
+        successful_requests = 0
+        total_accuracy = 0
+        mechanic_accuracy = {} 
+
+        for game_info in game_list:
+            game_name, game_year = game_info
+
+            if successful_requests >= 200:
+                break
+
+            try:
+                game_data = self.data[(self.data['Name'] == game_name) & (self.data['Year Published'] == game_year)]
+                mechanics_list = game_data.iloc[0]['Mechanics'].split(', ')
+
+                completion = openai.ChatCompletion.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": f"For the board game '{game_name}' published in {game_year}, the dataset lists these mechanics: {', '.join(mechanics_list)}. Are these mechanics accurately associated with the game?",
+                        },
+                    ],
+                )
+
+                chatgpt_mechanics = completion.choices[0].message['content'].split(', ')
+                accuracy_ratio = len(chatgpt_mechanics) / len(mechanics_list)
+
+                total_accuracy += accuracy_ratio
+                successful_requests += 1
+
+                for mechanic in mechanics_list:
+                    if mechanic not in mechanic_accuracy:
+                        mechanic_accuracy[mechanic] = []
+
+                    mechanic_accuracy[mechanic].append(accuracy_ratio)
+
+            except Exception as e:
+                print(f"An error occurred while querying ChatGPT for {game_name} ({game_year}): {e}")
+
+        if successful_requests > 0:
+            mean_accuracy = total_accuracy / successful_requests
+            print(f"\nMean Accuracy for {successful_requests} games: {mean_accuracy:.2%}")
+        else:
+            print("No games assessed.")
+
+        mechanic_avg_accuracy = {mechanic: sum(accuracies) / len(accuracies) for mechanic, accuracies in mechanic_accuracy.items()}
+
+        top_mechanics = sorted(mechanic_avg_accuracy.items(), key=lambda x: x[1], reverse=True)[:10]
+        bottom_mechanics = sorted(mechanic_avg_accuracy.items(), key=lambda x: x[1])[:10]
+
+        print("\nTop 10 Mechanics (Highest Accuracy):")
+        for mechanic, accuracy in top_mechanics:
+            print(f"{mechanic}: {accuracy:.2%}")
+
+        print("\nBottom 10 Mechanics (Lowest Accuracy):")
+        for mechanic, accuracy in bottom_mechanics:
+            print(f"{mechanic}: {accuracy:.2%}")
+
+        bgg_mechanics_set = set(self.data['Mechanics'].str.split(', ').sum())
+        never_attributed_mechanics = [mechanic for mechanic in bgg_mechanics_set if mechanic not in mechanic_avg_accuracy]
+
+        print("\nMechanics on BGG that ChatGPT never attributes to any games:")
+        print(", ".join(never_attributed_mechanics))
+
+
+
+dataset_file_path = 'bgg_dataset.csv'
+chatgpt_api_key = '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'
 analyzer = BoardGameMechanicsAnalyzer(dataset_file_path, chatgpt_api_key)
-analyzer.validate_mechanics("Gloomhaven")
+game_name = "Gloomhaven"
+analyzer.validate_mechanics(game_name)
+#deze is voor een aantal games
+games_to_assess = [
+    ("Gloomhaven", 2017),
+    ("Pandemic Legacy: Season 1", 2015),
+]
+analyzer.assess_accuracy_for_games(games_to_assess)
+
+# analyzer.assess_accuracy_for_games() gebruik om alle games te checken
