@@ -1,0 +1,145 @@
+import pandas as pd
+import openai
+import random
+
+class BoardGameMechanicsAnalyzer:
+    # Constructor to start up analyzer with dataset and key
+    def __init__(self, datasetlocation, chatgpt_api_key):
+        self.chatgpt_api_key = chatgpt_api_key
+        openai.api_key = self.chatgpt_api_key
+        
+        
+        
+        
+        try:
+            # Loads dataset and removes rows with no information in one of the cells
+            self.data = pd.read_csv(datasetlocation, sep=';')
+            self.data.dropna(subset=['Name'], inplace=True)
+            self.data.dropna(subset=['Year Published'], inplace=True)
+            self.data.dropna(subset=['Mechanics'], inplace=True)
+            print("Dataset loaded and empty rows removed.")
+        # Error message in case dataset can't be loaded
+        except Exception:
+            print("An error occurred while loading the dataset")
+
+
+  
+
+    # This function finds the given game in the database
+    def validateMechanics(self, gameName):
+        # Look for game in database from the input given via gameName
+        gameData = self.data[self.data['Name'] == gameName]
+        
+        # Return an error if no game is found with that name (needs to be exact spelling and uppercase/lowercase)
+        if gameData.empty:
+            print(f"No data found for game: {gameName}")
+            return
+
+        # Take the mechanics from the dataset of the game, splitting them using iloc and split (using iloc to access first row with title descriptions)
+        mechanicsList = gameData.iloc[0]['Mechanics'].split(', ')
+        
+        
+        
+        
+        # Prompt for ChatGPT, the prompt is very specific so it is easier to code
+        prompt = "As an AI familiar with a wide range of board games and their mechanics, "
+        prompt += "I'm seeking your insight on the game '" + gameName + "'. "
+        prompt += "According to my dataset, this game features the following mechanics: "
+        prompt += ', '.join(mechanicsList) + ". "
+        prompt += "Based on your knowledge, not taking into account the information from the dataset, "
+        prompt += "give me the game mechanics you feel are correct. Be very strict. "
+        prompt += "Do not give any other response than the list, separated by commas, of the correct mechanics."
+
+            
+        
+        
+        
+        try:
+            # Sends prompt to ChatGPT
+            completion = openai.chat.completions.create(
+                model    = "gpt-3.5-turbo",
+                messages = [{"role": "user", "content": prompt}],
+            )
+            
+            # Store response from ChatGPT and show it to user
+            apiResponse = completion.choices[0].message.content
+            print(f"\n ChatGPT's response for {gameName}:")
+            print(apiResponse)
+
+            # Compare the response with data from the dataset
+            self.compareMechanics(gameName, apiResponse)
+
+        # Return an error if there was an issue with the query from ChatGPT
+        except Exception as e:
+            print(f"An error occurred while querying ChatGPT: {e}")
+
+
+
+
+    # Compares the mechanics mentioned by ChatGPT with mechanics from the dataset
+    def compareMechanics(self, gameName, apiResponse):
+        # Get game data that was stored previously
+        gameData = self.data[self.data['Name'] == gameName]
+
+        # Make separate sets using iloc for the database and split to keep the items apart so they can be compared
+        databaseMechanics = set(gameData.iloc[0]['Mechanics'].split(', '))
+        apiMechanics = set(apiResponse.split(', '))
+
+        # Using the intersection function the database and api mechanics can be checked against eachother
+        matchingMechanics = databaseMechanics.intersection(apiMechanics)
+        # 100% is the total amount of mechanics in the database mechanics list
+        totalMechanics = len(databaseMechanics)
+        # Calculate the accuracy by dividing amount of matching mechanics by the total amount of mechanics
+        accuracyPercentage = (len(matchingMechanics) / totalMechanics) * 100
+        # Print the accuracy, rounding down to only full numbers using ':.0f'
+        print(f"\n Accuracy: {accuracyPercentage:.0f}%")
+
+
+
+
+    # Get a set of 5 random games from the dataset, so the user can try something for themselves
+    def getRandomGames(self, nrOfGames=5):
+        gameNames = self.data['Name'].dropna().tolist()
+        return random.sample(gameNames, min(nrOfGames, len(gameNames)))
+
+
+
+
+    # Main loop, this will rerun once ran through, so user can keep testing different games
+    def run(self):
+        while True:
+            
+            # Display numbers in front of the games mentioned
+            randomNrDisplay = 1
+            
+            # Display the set of 5 random games
+            randomGames = self.getRandomGames()
+            print("\n Here are some random games from the database: ")
+            for game in randomGames:
+                
+                print(f"{randomNrDisplay} {game}")
+                randomNrDisplay += 1
+            
+            # Allow the user to enter multiple game names, separated by commas
+            gameNamesInput = input("\n Enter game names separated by commas, or type 'exit' to quit: ")
+            
+            # Split the input into a list of game names by separating it with commas
+            gameNames = [name.strip() for name in gameNamesInput.split(',')]
+            
+            # Run validation for each game name entered
+            for gameName in gameNames:
+                if gameName:  # Ensure non-empty string
+                    self.validateMechanics(gameName)
+
+
+
+
+# Path to file location (adjust where necessary)
+dataset_file_path = 'C:\\Users\\Kai\\Documents\\SOM\\Assignment 1\\bgg_dataset.csv'
+
+# API Key (put in your own key to prevent the key from being disabled) (TRY TO ADD THIS VIA OS LIBRARY IF POSSIBLE)
+chatgpt_api_key = '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'
+
+# Run the full code
+analyzer = BoardGameMechanicsAnalyzer(dataset_file_path, chatgpt_api_key)
+analyzer.run()
