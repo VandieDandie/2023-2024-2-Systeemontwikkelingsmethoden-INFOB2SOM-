@@ -20,7 +20,7 @@ class BoardGameMechanicsAnalyzer:
             print("Dataset loaded and empty rows removed.")
         # Error message in case dataset can't be loaded
         except Exception:
-            print("An error occurred while loading the dataset")
+            print("An error occurred while loading the dataset, check if your file path is correct")
 
 
   
@@ -68,15 +68,23 @@ class BoardGameMechanicsAnalyzer:
 
             # Compare the response with data from the dataset
             self.compareMechanics(gameName, apiResponse)
-
+    
+            # Get and print the accuracy
+            accuracy = self.compareMechanics(gameName, apiResponse)
+            print(f"Accuracy for '{gameName}': {accuracy:.0f}%")
+            return accuracy
+            
         # Return an error if there was an issue with the query from ChatGPT
         except Exception as e:
             print(f"An error occurred while querying ChatGPT: {e}")
 
+        # Call compareMechanics with the game name and API response
+        accuracy = self.compareMechanics(gameName, apiResponse)
+        # Return calculated accuracy, will be used later to calculate mean accuracy
+        return accuracy
 
 
-
-    # Compares the mechanics mentioned by ChatGPT with mechanics from the dataset
+    # Compares the mechanics mentioned by ChatGPT with mechanics from the game in the dataset
     def compareMechanics(self, gameName, apiResponse):
         # Get game data that was stored previously
         gameData = self.data[self.data['Name'] == gameName]
@@ -87,13 +95,14 @@ class BoardGameMechanicsAnalyzer:
 
         # Using the intersection function the database and api mechanics can be checked against eachother
         matchingMechanics = databaseMechanics.intersection(apiMechanics)
+       
         # 100% is the total amount of mechanics in the database mechanics list
         totalMechanics = len(databaseMechanics)
+        
         # Calculate the accuracy by dividing amount of matching mechanics by the total amount of mechanics
         accuracyPercentage = (len(matchingMechanics) / totalMechanics) * 100
-        # Print the accuracy, rounding down to only full numbers using ':.0f'
-        print(f"\n Accuracy: {accuracyPercentage:.0f}%")
 
+        return accuracyPercentage
 
 
 
@@ -104,32 +113,53 @@ class BoardGameMechanicsAnalyzer:
 
 
 
-
     # Main loop, this will rerun once ran through, so user can keep testing different games
     def run(self):
         while True:
-            
+            # Initialize a list to store accuracy of each game
+            accuracies = []
+    
             # Display numbers in front of the games mentioned
             randomNrDisplay = 1
-            
+    
             # Display the set of 5 random games
             randomGames = self.getRandomGames()
-            print("\n Here are some random games from the database: ")
+            print("\n Random games from the database: ")
             for game in randomGames:
-                
                 print(f"{randomNrDisplay} {game}")
                 randomNrDisplay += 1
-            
+    
             # Allow the user to enter multiple game names, separated by commas
-            gameNamesInput = input("\n Enter game names separated by commas, or type 'exit' to quit: ")
+            gameNamesInput = input("\n Enter game names separated by commas: ")
+            if gameNamesInput.lower() == 'exit':
+                break
             
-            # Split the input into a list of game names by separating it with commas
+            
+            
+            # Split games from input into list by seperating it using the commas
             gameNames = [name.strip() for name in gameNamesInput.split(',')]
-            
-            # Run validation for each game name entered
+    
+            # Go over each game in input
             for gameName in gameNames:
-                if gameName:  # Ensure non-empty string
-                    self.validateMechanics(gameName)
+                if gameName: # This checks if the input is empty or not
+                    # Call for validateMechanics to check game's mechanics and get accuracy of ChatGPT
+                    accuracy = self.validateMechanics(gameName)
+                    # Double check that value is actually returned
+                    if accuracy is not None: 
+                        # Add game accuracy to the total list of accuracies
+                        accuracies.append(accuracy)
+            
+            
+            
+            # After all games are processed, check if accuracy values have been collected
+            if accuracies:
+                # Calculate mean accuracy by dividing the sum of accuracies by their nr
+                meanAccuracy = sum(accuracies) / len(accuracies)
+                # Print mean accuracy
+                print(f"\n Mean Accuracy: {meanAccuracy:.2f}%")
+            else:
+                # If there are no values found for the accuracies, get an error message
+                print("No valid games were processed.")
 
 
 
@@ -138,7 +168,7 @@ class BoardGameMechanicsAnalyzer:
 dataset_file_path = 'C:\\Users\\Kai\\Documents\\SOM\\Assignment 1\\bgg_dataset.csv'
 
 # API Key (put in your own key to prevent the key from being disabled) (TRY TO ADD THIS VIA OS LIBRARY IF POSSIBLE)
-chatgpt_api_key = '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'
+chatgpt_api_key = 'YOURKEYHERE'
 
 # Run the full code
 analyzer = BoardGameMechanicsAnalyzer(dataset_file_path, chatgpt_api_key)
