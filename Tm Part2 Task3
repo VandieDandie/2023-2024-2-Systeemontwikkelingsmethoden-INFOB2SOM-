@@ -4,7 +4,7 @@ import random
 
 class BoardGameMechanicsAnalyzer:
     # Constructor to start up analyzer with dataset and key
-    def __init__(self, datasetlocation, chatgpt_api_key):
+    def __init__(self, datasetLocation, chatgpt_api_key):
         self.chatgpt_api_key = chatgpt_api_key
         openai.api_key = self.chatgpt_api_key
         
@@ -13,7 +13,7 @@ class BoardGameMechanicsAnalyzer:
         
         try:
             # Loads dataset and removes rows with no information in one of the cells
-            self.data = pd.read_csv(datasetlocation, sep=';')
+            self.data = pd.read_csv(datasetLocation, sep=';')
             self.data.dropna(subset=['Name'], inplace=True)
             self.data.dropna(subset=['Year Published'], inplace=True)
             self.data.dropna(subset=['Mechanics'], inplace=True)
@@ -84,6 +84,7 @@ class BoardGameMechanicsAnalyzer:
         return accuracy
 
 
+
     # Compares the mechanics mentioned by ChatGPT with mechanics from the game in the dataset
     def compareMechanics(self, gameName, apiResponse):
         # Get game data that was stored previously
@@ -105,9 +106,9 @@ class BoardGameMechanicsAnalyzer:
         return accuracyPercentage
 
 
-
+    randomGamesShownAmt = 5
     # Get a set of 5 random games from the dataset, so the user can try something for themselves
-    def getRandomGames(self, nrOfGames=5):
+    def getRandomGames(self, nrOfGames=randomGamesShownAmt):
         gameNames = self.data['Name'].dropna().tolist()
         return random.sample(gameNames, min(nrOfGames, len(gameNames)))
 
@@ -119,7 +120,7 @@ class BoardGameMechanicsAnalyzer:
             # Initialize a list to store accuracy of each game
             accuracies = []
     
-            # Display numbers in front of the games mentioned
+            # Display numbers in front of the random games mentioned
             randomNrDisplay = 1
     
             # Display the set of 5 random games
@@ -168,7 +169,7 @@ class BoardGameMechanicsAnalyzer:
 dataset_file_path = 'C:\\Users\\Kai\\Documents\\SOM\\Assignment 1\\bgg_dataset.csv'
 
 # API Key (put in your own key to prevent the key from being disabled) (TRY TO ADD THIS VIA OS LIBRARY IF POSSIBLE)
-chatgpt_api_key = 'YOURKEYHERE'
+chatgpt_api_key = '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'
 
 # Run the full code
 analyzer = BoardGameMechanicsAnalyzer(dataset_file_path, chatgpt_api_key)
