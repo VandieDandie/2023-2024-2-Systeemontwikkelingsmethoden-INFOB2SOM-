@@ -1,0 +1,46 @@
+import unittest
+from unittest.mock import patch
+from BoardGameMechanicsAnalyzer import BoardGameMechanicsAnalyzer
+
+class TestBoardGameMechanicsAnalyzer(unittest.TestCase):
+
+    def test_successful_game_mechanics_validation(self):
+        with patch('openai.chat.completions.create') as mock_create:
+            # Mock the response from ChatGPT
+            mock_create.return_value.choices[0].message.content = "Strategy, Worker Placement"
+            
+            # Create an instance of the analyzer
+            analyzer = BoardGameMechanicsAnalyzer('bgg_dataset', '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')
+            
+            # Call validateMechanics with the mocked response
+            accuracy = analyzer.validateMechanics("TestGame")
+            
+            # Assertions
+            self.assertIsNotNone(accuracy)
+            self.assertEqual(accuracy, 100.0)
+
+    def test_unreachable_chatgpt(self):
+        # Set an invalid ChatGPT API key
+        analyzer = BoardGameMechanicsAnalyzer('valid_dataset.csv', 'invalid_api_key')
+        
+        # Call validateMechanics for a specific game
+        with self.assertRaises(Exception) as context:
+            analyzer.validateMechanics("TestGame")
+        
+        # Assert that an error message is raised
+        self.assertIn("An error occurred while querying ChatGPT", str(context.exception))
+
+    def test_empty_input_games(self):
+        # Create an instance of the analyzer
+        analyzer = BoardGameMechanicsAnalyzer('valid_dataset.csv', 'valid_api_key')
+        
+        # Enter an empty string as input when prompted for game names
+        with patch('builtins.input', return_value=""):
+            with patch('builtins.print') as mock_print:
+                analyzer.run()
+        
+        # Assert that the correct message is printed
+        mock_print.assert_called_with("No valid games were processed.")
+
+if __name__ == '__main__':
+    unittest.main()
