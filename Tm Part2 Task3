@@ -40,19 +40,17 @@ class BoardGameMechanicsAnalyzer:
         
         
         
-        
         # Prompt for ChatGPT, the prompt is very specific so it is easier to code
-        prompt = "As an AI familiar with a wide range of board games and their mechanics, "
-        prompt += "I'm seeking your insight on the game '" + gameName + "'. "
-        prompt += "According to my dataset, this game features the following mechanics: "
-        prompt += ', '.join(mechanicsList) + ". "
-        prompt += "Based on your knowledge, not taking into account the information from the dataset, "
-        prompt += "give me the game mechanics you feel are correct. Be very strict. "
-        prompt += "Do not give any other response than the list, separated by commas, of the correct mechanics."
+        prompt = (
+            f"As an AI familiar with a wide range of board games and their mechanics, "
+            f"I'm seeking your insight on the game '{gameName}'. "
+            f"According to my dataset, this game features the following mechanics: {', '.join(mechanicsList)}. "
+            f"Based on your knowledge, not taking into account the information from the dataset, "
+            f"give me the game mechanics you feel are correct according to your own database. Be extremely strict, if in doubt, do not count the mechanic. "
+            f"Do not give any other response than the list, separated by commas, of the correct mechanics."
+        )
 
             
-        
-        
         
         try:
             # Sends prompt to ChatGPT
@@ -169,7 +167,7 @@ class BoardGameMechanicsAnalyzer:
 dataset_file_path = 'C:\\Users\\Kai\\Documents\\SOM\\Assignment 1\\bgg_dataset.csv'
 
 # API Key (put in your own key to prevent the key from being disabled) (TRY TO ADD THIS VIA OS LIBRARY IF POSSIBLE)
-chatgpt_api_key = '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'
+chatgpt_api_key = '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'
 
 # Run the full code
 analyzer = BoardGameMechanicsAnalyzer(dataset_file_path, chatgpt_api_key)
